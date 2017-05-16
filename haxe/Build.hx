@@ -1,3 +1,5 @@
+import haxe.io.Path;
+
 class Build {
 
 	static var CFG = @:privateAccess Config.CFG;
@@ -34,21 +36,21 @@ class Build {
 	function cygCopyFile( file : String ) {
 
 		copiedFiles.set(file, true);
-		try sys.io.File.copy(cygwinPath + "/" + file, "mingw/" + file) catch( e : Int ) log("*** MISSING " + file+" in your Cygwin install ***");
+		try sys.io.File.copy(Path.join([cygwinPath, file]), Path.join(["mingw", file])) catch( e : Int ) log("*** MISSING " + file+" in your Cygwin install ***");
 
 		if( !StringTools.endsWith(file.toLowerCase(),".exe") )
 			return;
 
 		// look for dll dependencies
-		var o = new sys.io.Process("dumpbin.exe",["/IMPORTS","mingw/"+file]);
+		var o = new sys.io.Process("cygcheck.exe",[Path.join(["mingw", file])]);
 		var lines = o.stdout.readAll().toString().split("\n");
 		o.exitCode();
-		var r = ~/^[A-Za-z0-9_-]+\.dll$/;
+		var r = ~/^  [A-Za-z0-9_-]+\.dll$/;
 		for( f in lines ) {
 			var f = StringTools.trim(f);
 			if( !r.match(f) || copiedFiles.exists(f) ) continue;
-			if( !sys.FileSystem.exists(cygwinPath+"/bin/"+f) ) continue;
-			cygCopyFile("bin/"+f);
+			if( !sys.FileSystem.exists(Path.join([cygwinPath, "bin", f])) ) continue;
+			cygCopyFile(Path.join(["bin", f]));
 		}
 	}
 
@@ -62,29 +64,22 @@ class Build {
 	}
 
 	function cygCopyDir( dir : String ) {
-		var baseDir = "";
-		for( f in dir.split("/") ) {
-			if( baseDir == "" )
-				baseDir = f;
-			else
-				baseDir += "/"+f;
-			makeDir("mingw/"+baseDir);
-		}
+		makeDir(Path.join(["mingw", dir]));
 		cygCopyRec(dir);
 	}
 
 	function cygCopyRec( dir : String ) {
-		var cygDir = cygwinPath + "/" + dir;
+		var cygDir = Path.join([cygwinPath, dir]);
 		var files = try sys.FileSystem.readDirectory(cygDir) catch( e : Dynamic ) {
 			log("*** MISSING "+dir+" in your Cygwin install ***");
 			return;
 		}
 		for( f in files )
-			if( sys.FileSystem.isDirectory(cygDir+"/"+f) ) {
-				makeDir("mingw/"+dir+"/"+f);
-				cygCopyRec(dir+"/"+f);
+			if( sys.FileSystem.isDirectory(Path.join([cygDir, f])) ) {
+				makeDir(Path.join(["mingw", dir, f]));
+				cygCopyRec(Path.join([dir, f]));
 			} else
-				cygCopyFile(dir+"/"+f);
+				cygCopyFile(Path.join([dir, f]));
 	}
 
 	function build() {
