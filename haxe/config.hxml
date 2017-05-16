@@ -1,4 +1,4 @@
 -main Config
 -cpp bin
 -cmd copy bin\config.exe .
--cmd rm -rf bin
+-cmd rd /s /q bin
