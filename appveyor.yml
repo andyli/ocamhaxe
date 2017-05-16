@@ -1,0 +1,19 @@
+version: "{build}"
+
+environment:
+  global:
+    HAXELIB_ROOT: C:\projects\haxelib
+
+install:
+  - cinst haxe --version 3.4.2 -y
+  - RefreshEnv
+  - mkdir "%HAXELIB_ROOT%"
+  - haxelib setup "%HAXELIB_ROOT%"
+  - haxelib install hxcpp
+  - haxelib list
+
+build_script:
+  - haxe --cwd haxe build.hxml
+  - haxe --cwd haxe config.hxml
+
+test: off
